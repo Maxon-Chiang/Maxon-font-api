@@ -14,18 +14,27 @@ class handler(BaseHTTPRequestHandler):
         character = query_components.get('char', [''])[0]
 
         if not character:
-            # ... (錯誤處理)
+            self.send_response(400)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "Character not provided"}).encode())
             return
 
         bitmap_data = font_data.get(character)
 
         if bitmap_data:
-            response_data = { "character": character, "bitmap": bitmap_data }
+            response_data = {
+                "character": character,
+                "bitmap": bitmap_data
+            }
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps(response_data).encode())
         else:
-            # ... (找不到字的錯誤處理)
-            return
+            self.send_response(404)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": f"Character '{character}' not found"}).encode())
+        return
