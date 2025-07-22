@@ -5,7 +5,7 @@ import os
 
 # 在函式啟動時，預先載入一次我們的 JSON 字型字典
 font_path = os.path.join(os.path.dirname(__file__), 'font_data.json')
-with open(font_path, 'r', encoding='utf-8') as f:
+with open(font_path, 'r', encoding='utf-8-sig') as f:
     font_data = json.load(f)
 
 class handler(BaseHTTPRequestHandler):
