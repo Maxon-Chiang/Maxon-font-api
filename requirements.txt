@@ -1,2 +1,1 @@
---no-binary Pillow
-Pillow==9.3.0
+# This file can be empty, but is needed for Vercel to detect a Python project.

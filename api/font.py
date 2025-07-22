@@ -1,56 +1,31 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-from PIL import Image, ImageDraw, ImageFont
-import os
 import json
+import os
+
+# 在函式啟動時，預先載入一次我們的 JSON 字型字典
+font_path = os.path.join(os.path.dirname(__file__), 'font.json')
+with open(font_path, 'r', encoding='utf-8') as f:
+    font_data = json.load(f)
 
 class handler(BaseHTTPRequestHandler):
-
     def do_GET(self):
         query_components = parse_qs(urlparse(self.path).query)
-        unicode_str = query_components.get('unicode', ['0'])[0]
+        character = query_components.get('char', [''])[0]
 
-        try:
-            char_code = int(unicode_str)
-            character = chr(char_code)
-        except ValueError:
-            self.send_response(400)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "Invalid Unicode"}).encode())
+        if not character:
+            # ... (錯誤處理)
             return
 
-        font_path = os.path.join(os.path.dirname(__file__), 'font_data.ttf')
-        try:
-            font = ImageFont.truetype(font_path, 16)
-        except IOError:
-            self.send_response(500)
+        bitmap_data = font_data.get(character)
+
+        if bitmap_data:
+            response_data = { "character": character, "bitmap": bitmap_data }
+            self.send_response(200)
             self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(json.dumps({"error": "Font file not found on server"}).encode())
+            self.wfile.write(json.dumps(response_data).encode())
+        else:
+            # ... (找不到字的錯誤處理)
             return
-
-        image = Image.new('1', (16, 16), color=0)
-        draw = ImageDraw.Draw(image)
-        draw.text((0, 0), character, font=font, fill=1)
-
-        bitmap_columns = []
-        for x in range(16):
-            column_byte = 0
-            for y in range(16):
-                if image.getpixel((x, y)) > 0:
-                    column_byte |= (1 << y)
-            bitmap_columns.append(column_byte)
-
-        response_data = {
-            "character": character,
-            "unicode": char_code,
-            "bitmap": bitmap_columns
-        }
-
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        self.wfile.write(json.dumps(response_data).encode())
-        return
